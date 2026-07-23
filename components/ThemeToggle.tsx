@@ -46,7 +46,7 @@ export function ThemeToggle() {
       aria-label={label}
       title={label}
       aria-pressed={theme === null ? undefined : isDark}
-      className="inline-flex size-9 items-center justify-center rounded-[var(--radius-card)] border border-border text-surface-contrast transition-colors duration-200 hover:bg-surface-muted focus-visible:outline-none"
+      className="inline-flex size-9 items-center justify-center rounded-[var(--radius-card)] border border-border text-surface-contrast transition-colors duration-200 hover:bg-surface-muted"
     >
       <span aria-hidden="true" className="text-base leading-none">
         {theme === null ? "" : isDark ? "☀" : "☾"}
