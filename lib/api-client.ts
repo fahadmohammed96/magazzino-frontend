@@ -76,8 +76,48 @@ function buildUrl(baseUrl: string, path: string): string {
   return `${baseUrl}/${path.replace(/^\/+/, "")}`;
 }
 
-/** Opzioni di {@link apiFetch}: le stesse di `fetch`, senza sorprese. */
-export type ApiFetchOptions = RequestInit;
+/**
+ * Configurazione dell'autenticazione del client API. È registrata una sola
+ * volta dallo strato applicativo (`AuthProvider`) e permette a `apiFetch` di
+ * restare disaccoppiato da React: legge il token corrente e notifica la
+ * scadenza della sessione (401) senza conoscere il router né lo store.
+ */
+interface ApiAuthConfig {
+  /** Restituisce il token Bearer corrente, o `null` se non autenticato. */
+  getToken: () => string | null;
+  /** Invocata quando una richiesta autenticata riceve 401 (sessione scaduta). */
+  onUnauthorized: () => void;
+}
+
+let authTokenProvider: () => string | null = () => null;
+let unauthorizedHandler: (() => void) | null = null;
+
+/**
+ * Registra la sorgente del token e l'handler di sessione scaduta.
+ * Chiamata dall'`AuthProvider` al mount; sostituisce eventuali registrazioni
+ * precedenti (l'app ha un solo provider attivo).
+ */
+export function configureApiAuth(config: ApiAuthConfig): void {
+  authTokenProvider = config.getToken;
+  unauthorizedHandler = config.onUnauthorized;
+}
+
+/** Ripristina lo stato di default (nessun token, nessun handler). */
+export function resetApiAuth(): void {
+  authTokenProvider = () => null;
+  unauthorizedHandler = null;
+}
+
+/** Opzioni di {@link apiFetch}: quelle di `fetch` più il controllo dell'auth. */
+export interface ApiFetchOptions extends RequestInit {
+  /**
+   * Se `true` (default) allega `Authorization: Bearer <token>` quando un token
+   * è disponibile e, su 401, invoca l'handler di sessione scaduta. Le
+   * richieste pubbliche (es. il login stesso) passano `auth: false`, così un
+   * 401 di credenziali errate resta un errore locale da mostrare in pagina.
+   */
+  auth?: boolean;
+}
 
 /**
  * Esegue una richiesta verso il backend e restituisce il corpo JSON tipizzato.
@@ -96,15 +136,19 @@ export async function apiFetch<T = unknown>(
   path: string,
   options: ApiFetchOptions = {},
 ): Promise<T> {
+  const { auth = true, ...init } = options;
   const url = buildUrl(getApiBaseUrl(), path);
+
+  const token = auth ? authTokenProvider() : null;
 
   let response: Response;
   try {
     response = await fetch(url, {
-      ...options,
+      ...init,
       headers: {
         Accept: "application/json",
-        ...options.headers,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init.headers,
       },
     });
   } catch {
@@ -116,6 +160,11 @@ export async function apiFetch<T = unknown>(
   }
 
   if (!response.ok) {
+    // Una richiesta autenticata che riceve 401 significa sessione scaduta o
+    // token invalido: notifica lo strato applicativo (logout + redirect).
+    if (response.status === 401 && auth && unauthorizedHandler) {
+      unauthorizedHandler();
+    }
     throw await toApiError(response);
   }
 

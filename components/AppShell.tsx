@@ -5,8 +5,16 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { NavLinks } from "@/components/NavLinks";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/components/AuthProvider";
+import type { Role } from "@/lib/auth";
 
 const APP_NAME = "Magazzino";
+
+/** Etichetta leggibile del ruolo mostrata nell'header. */
+const ROLE_LABEL: Record<Role, string> = {
+  admin: "Amministratore",
+  operator: "Operatore",
+};
 
 /**
  * Cornice dell'area interna: header con marchio e toggle tema, navigazione
@@ -16,6 +24,8 @@ const APP_NAME = "Magazzino";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+  const role = user?.role;
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
 
@@ -114,15 +124,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {APP_NAME}
           </Link>
 
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            {user && (
+              <span className="hidden text-sm text-muted sm:inline">
+                <span className="font-medium text-surface-contrast">
+                  {user.username}
+                </span>
+                <span aria-hidden="true"> · </span>
+                {ROLE_LABEL[user.role]}
+              </span>
+            )}
             <ThemeToggle />
+            <button
+              type="button"
+              onClick={logout}
+              className="inline-flex h-9 items-center rounded-[var(--radius-card)] border border-border px-3 text-sm font-medium text-surface-contrast transition-colors duration-200 hover:bg-surface"
+            >
+              Esci
+            </button>
           </div>
         </header>
 
         <div className="mx-auto flex w-full max-w-7xl">
           {/* Sidebar desktop */}
           <aside className="hidden w-60 shrink-0 border-r border-border p-4 md:block">
-            <NavLinks />
+            <NavLinks role={role} />
           </aside>
 
           <main
@@ -150,7 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             aria-label="Navigazione"
             className="absolute left-0 top-0 h-full w-64 border-r border-border bg-surface-muted p-4 shadow-lg"
           >
-            <NavLinks onNavigate={() => setMenuOpen(false)} />
+            <NavLinks role={role} onNavigate={() => setMenuOpen(false)} />
           </aside>
         </div>
       )}

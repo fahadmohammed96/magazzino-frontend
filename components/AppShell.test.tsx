@@ -7,6 +7,18 @@ vi.mock("next/navigation", () => ({
   usePathname: () => mockPathname,
 }));
 
+// La shell consuma la sessione: qui mockiamo un utente Admin autenticato, così
+// i test restano focalizzati sul comportamento del drawer modale.
+const mockLogout = vi.fn();
+vi.mock("@/components/AuthProvider", () => ({
+  useAuth: () => ({
+    status: "authenticated",
+    user: { id: 1, username: "admin", role: "admin" },
+    login: vi.fn(),
+    logout: mockLogout,
+  }),
+}));
+
 function renderShell() {
   return render(
     <AppShell>
@@ -14,6 +26,25 @@ function renderShell() {
     </AppShell>,
   );
 }
+
+describe("AppShell — sessione utente", () => {
+  afterEach(() => {
+    mockPathname = "/";
+    mockLogout.mockClear();
+  });
+
+  it("mostra l'utente e il suo ruolo nell'header", () => {
+    renderShell();
+    expect(screen.getByText("admin")).toBeInTheDocument();
+    expect(screen.getByText(/amministratore/i)).toBeInTheDocument();
+  });
+
+  it("il pulsante Esci invoca il logout", () => {
+    renderShell();
+    fireEvent.click(screen.getByRole("button", { name: "Esci" }));
+    expect(mockLogout).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("AppShell — drawer mobile modale", () => {
   afterEach(() => {

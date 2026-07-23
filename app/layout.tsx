@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AppShell } from "@/components/AppShell";
+import { AuthProvider } from "@/components/AuthProvider";
 import { NO_FLASH_THEME_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -19,7 +19,10 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
       </head>
       <body className="bg-surface text-surface-contrast font-body antialiased">
-        <AppShell>{children}</AppShell>
+        {/* La shell dell'area interna vive nel gruppo di rotte protette
+            (`app/(protected)`); il login resta fuori dalla shell. Qui sopra
+            tutto c'è solo il provider di sessione. */}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
