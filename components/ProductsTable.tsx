@@ -92,7 +92,7 @@ export function ProductsTable({
                     <button
                       type="button"
                       onClick={() => onDelete?.(product)}
-                      className="inline-flex h-8 items-center rounded-[var(--radius-card)] border border-border px-3 text-xs font-medium text-danger transition-colors duration-200 hover:bg-surface-muted"
+                      className="inline-flex h-8 items-center rounded-[var(--radius-card)] border border-border px-3 text-xs font-medium text-danger-fg transition-colors duration-200 hover:bg-surface-muted"
                     >
                       Elimina
                     </button>

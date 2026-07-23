@@ -15,7 +15,10 @@
  *  - muted su surface             → chiaro ~5.4:1, scuro ~6.8:1
  *  - primary-contrast su primary  → chiaro ~9:1,  scuro ~6:1
  *  - danger-contrast su danger    → chiaro ~5.9:1, scuro ~5.1:1
- *    (usato dal badge sotto-scorta: testo bianco su fondo rosso pieno)
+ *    (fondo pieno: badge sotto-scorta e pulsante distruttivo, testo bianco)
+ *  - danger-fg su surface/muted   → chiaro ≥5.3:1, scuro ≥5.8:1
+ *    (danger USATO COME TESTO su superficie: token distinto perché il rosso
+ *    del fondo pieno, letto come testo, non regge i 4.5:1 in dark mode)
  */
 
 /* Dark mode pilotato da una classe `.dark` sull'elemento <html>: il toggle
@@ -33,6 +36,7 @@
   --color-muted: oklch(0.47 0.015 260);
   --color-danger: oklch(0.52 0.19 25);
   --color-danger-contrast: oklch(0.99 0 0);
+  --color-danger-fg: oklch(0.52 0.19 25);
 
   color-scheme: light;
 }
@@ -48,6 +52,7 @@
   --color-muted: oklch(0.7 0.02 260);
   --color-danger: oklch(0.55 0.17 25);
   --color-danger-contrast: oklch(0.99 0 0);
+  --color-danger-fg: oklch(0.7 0.17 25);
 
   color-scheme: dark;
 }
@@ -66,6 +71,7 @@
   --color-muted: var(--color-muted);
   --color-danger: var(--color-danger);
   --color-danger-contrast: var(--color-danger-contrast);
+  --color-danger-fg: var(--color-danger-fg);
 
   --font-display: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
   --font-body: var(--font-sans, ui-sans-serif, system-ui, sans-serif);

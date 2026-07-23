@@ -23,9 +23,13 @@ type FieldErrors = Partial<
   Record<"sku" | "name" | "price" | "stock" | "threshold", string>
 >;
 
-/** Parsa un numero da input testuale; `null` se vuoto o non numerico. */
+/**
+ * Parsa un numero da input testuale; `null` se vuoto o non numerico. Accetta
+ * la virgola come separatore decimale (locale italiano: `1,50` → `1.5`), che
+ * `Number()` da solo rifiuterebbe.
+ */
 function parseNumber(value: string): number | null {
-  const trimmed = value.trim();
+  const trimmed = value.trim().replace(",", ".");
   if (trimmed === "") return null;
   const n = Number(trimmed);
   return Number.isFinite(n) ? n : null;
@@ -71,13 +75,15 @@ export function ProductFormDialog({
   );
   const [errors, setErrors] = useState<FieldErrors>({});
 
-  // Semantica modale: focus iniziale, trappola del focus, chiusura con Esc e
+  // Semantica modale: focus iniziale, trappola del focus, chiusura con Esc,
   // ripristino del focus al controllo che ha aperto il dialog (stesso pattern
-  // del drawer della shell). Lo sfondo è reso inerte dall'overlay.
+  // del drawer della shell) e blocco dello scroll della pagina retrostante.
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     const opener = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
     const focusables = () =>
       Array.from(
@@ -116,6 +122,7 @@ export function ProductFormDialog({
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
       opener?.focus();
     };
     // onCancel è stabile (useCallback nel chiamante); il dialog è montato una
@@ -210,7 +217,7 @@ export function ProductFormDialog({
               className={inputClass}
             />
             {errors.sku && (
-              <p id={`${skuId}-err`} className="text-xs text-danger">
+              <p id={`${skuId}-err`} className="text-xs text-danger-fg">
                 {errors.sku}
               </p>
             )}
@@ -230,7 +237,7 @@ export function ProductFormDialog({
               className={inputClass}
             />
             {errors.name && (
-              <p id={`${nameId}-err`} className="text-xs text-danger">
+              <p id={`${nameId}-err`} className="text-xs text-danger-fg">
                 {errors.name}
               </p>
             )}
@@ -257,10 +264,11 @@ export function ProductFormDialog({
               </label>
               <input
                 id={priceId}
-                type="number"
+                // Testo (non `type=number`) per preservare la virgola decimale:
+                // `type=number` la scarterebbe su molti locale. `inputMode`
+                // apre comunque il tastierino numerico su mobile.
+                type="text"
                 inputMode="decimal"
-                step="0.01"
-                min="0"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 disabled={submitting}
@@ -269,7 +277,7 @@ export function ProductFormDialog({
                 className={inputClass}
               />
               {errors.price && (
-                <p id={`${priceId}-err`} className="text-xs text-danger">
+                <p id={`${priceId}-err`} className="text-xs text-danger-fg">
                   {errors.price}
                 </p>
               )}
@@ -293,7 +301,7 @@ export function ProductFormDialog({
                 className={inputClass}
               />
               {errors.stock && (
-                <p id={`${stockId}-err`} className="text-xs text-danger">
+                <p id={`${stockId}-err`} className="text-xs text-danger-fg">
                   {errors.stock}
                 </p>
               )}
@@ -319,7 +327,7 @@ export function ProductFormDialog({
                 className={inputClass}
               />
               {errors.threshold && (
-                <p id={`${thresholdId}-err`} className="text-xs text-danger">
+                <p id={`${thresholdId}-err`} className="text-xs text-danger-fg">
                   {errors.threshold}
                 </p>
               )}
@@ -330,7 +338,7 @@ export function ProductFormDialog({
             <p
               id={errorId}
               role="alert"
-              className="rounded-[var(--radius-card)] border border-border bg-surface px-3 py-2 text-sm text-danger"
+              className="rounded-[var(--radius-card)] border border-border bg-surface px-3 py-2 text-sm text-danger-fg"
             >
               {errorMessage}
             </p>

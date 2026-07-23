@@ -142,6 +142,39 @@ describe("ProductFormDialog", () => {
     });
   });
 
+  it("accetta la virgola come separatore decimale nel prezzo", () => {
+    const onSubmit = vi.fn();
+    render(
+      <ProductFormDialog
+        mode="create"
+        submitting={false}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/^sku$/i), {
+      target: { value: "SKU-9" },
+    });
+    fireEvent.change(screen.getByLabelText(/^nome$/i), {
+      target: { value: "Bullone" },
+    });
+    fireEvent.change(screen.getByLabelText(/prezzo/i), {
+      target: { value: "1,50" },
+    });
+    fireEvent.change(screen.getByLabelText(/giacenza/i), {
+      target: { value: "10" },
+    });
+    fireEvent.change(screen.getByLabelText(/soglia/i), {
+      target: { value: "2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^salva$/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ price: 1.5 }),
+    );
+  });
+
   it("mostra il messaggio d'errore del backend", () => {
     render(
       <ProductFormDialog

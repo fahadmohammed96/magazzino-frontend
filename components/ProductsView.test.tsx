@@ -210,6 +210,27 @@ describe("ProductsView", () => {
     expect(listProducts).toHaveBeenCalledTimes(2);
   });
 
+  it("intrappola il focus nel dialog di conferma eliminazione", async () => {
+    render(<ProductsView />);
+    await screen.findByText("Vite M6");
+
+    const riga = screen.getByText("Vite M6").closest("tr")!;
+    fireEvent.click(within(riga).getByRole("button", { name: /elimina/i }));
+
+    const dialog = screen.getByRole("alertdialog");
+    const annulla = within(dialog).getByRole("button", { name: /annulla/i });
+    const elimina = within(dialog).getByRole("button", { name: /^elimina$/i });
+
+    // Focus iniziale sull'azione non distruttiva.
+    expect(annulla).toHaveFocus();
+    // Shift+Tab dal primo focusable cicla all'ultimo (resta dentro la modale).
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(elimina).toHaveFocus();
+    // Tab dall'ultimo torna al primo.
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(annulla).toHaveFocus();
+  });
+
   it("importa un CSV e mostra il riepilogo con gli errori riga", async () => {
     importProducts.mockResolvedValue({
       created: 2,

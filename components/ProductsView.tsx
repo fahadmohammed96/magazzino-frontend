@@ -228,7 +228,7 @@ export function ProductsView() {
       {actionError && (
         <p
           role="alert"
-          className="rounded-[var(--radius-card)] border border-border bg-surface-muted px-3 py-2 text-sm text-danger"
+          className="rounded-[var(--radius-card)] border border-border bg-surface-muted px-3 py-2 text-sm text-danger-fg"
         >
           {actionError}
         </p>
@@ -255,7 +255,7 @@ export function ProductsView() {
             </button>
           </div>
           {importResult.errors.length > 0 && (
-            <ul className="flex flex-col gap-1 text-sm text-danger">
+            <ul className="flex flex-col gap-1 text-sm text-danger-fg">
               {importResult.errors.map((err) => (
                 <li key={`${err.row}-${err.message}`}>
                   Riga {err.row}: {err.message}
@@ -274,7 +274,7 @@ export function ProductsView() {
 
       {listStatus === "error" && (
         <div className="flex flex-col items-start gap-3 rounded-[var(--radius-card)] border border-dashed border-border p-8">
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-sm text-danger-fg">
             {listError}
           </p>
           <button
@@ -349,7 +349,10 @@ interface ConfirmDeleteDialogProps {
 
 /**
  * Conferma modale dell'eliminazione di un prodotto. Focus iniziale sul pulsante
- * di annulla (azione non distruttiva), chiusura con Esc, ripristino del focus.
+ * di annulla (azione non distruttiva), focus intrappolato (Tab/Shift+Tab in
+ * ciclo), chiusura con Esc, blocco dello scroll di sfondo e ripristino del
+ * focus. Stesso pattern modale di `ProductFormDialog`: essendo un'azione
+ * distruttiva, la trappola del focus qui è necessaria a onorare `aria-modal`.
  */
 function ConfirmDeleteDialog({
   product,
@@ -362,18 +365,49 @@ function ConfirmDeleteDialog({
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
     const opener = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusables = () =>
+      Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+
     cancelRef.current?.focus();
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
         onCancel();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+
+      if (active && !dialog!.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
       }
     }
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
       opener?.focus();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
