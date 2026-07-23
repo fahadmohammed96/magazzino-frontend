@@ -26,9 +26,11 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     slug: "catalogo",
     label: "Catalogo",
     description:
-      "Prodotti e giacenze del magazzino. La gestione arriverà con le issue di dominio.",
-    // Gestione prodotti/prezzi: riservata all'Admin (cfr. contratto BE auth).
-    roles: ["admin"],
+      "Prodotti e giacenze del magazzino, con evidenza dei sotto-scorta.",
+    // Visibile a tutti gli utenti autenticati: l'Operatore consulta il
+    // catalogo in sola lettura, le azioni di scrittura (CRUD, import) sono
+    // gated all'Admin dentro la vista. (Matrice ruolo↔sezione fissata dalla
+    // issue di dominio Catalogo, MYL-17.)
   },
   {
     slug: "clienti",

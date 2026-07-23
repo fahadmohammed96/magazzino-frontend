@@ -33,21 +33,20 @@ describe("NavLinks", () => {
     );
   });
 
-  it("all'Operatore nasconde le voci riservate all'Admin (Catalogo)", () => {
+  it("all'Operatore mostra il Catalogo (sola lettura) e le altre sezioni", () => {
     render(<NavLinks role="operator" />);
     expect(screen.getByRole("link", { name: "Panoramica" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Catalogo" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Clienti" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ordini" })).toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: "Catalogo" }),
-    ).not.toBeInTheDocument();
   });
 
-  it("senza ruolo noto nasconde comunque le voci riservate", () => {
+  it("senza ruolo noto mostra comunque le sezioni pubbliche", () => {
     render(<NavLinks />);
     expect(
-      screen.queryByRole("link", { name: "Catalogo" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("link", { name: "Panoramica" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Catalogo" })).toBeInTheDocument();
   });
 
   it("segna la sezione attiva con aria-current=page", () => {

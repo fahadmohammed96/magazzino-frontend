@@ -1,16 +1,13 @@
 import type { Metadata } from "next";
-import { SectionPlaceholder } from "@/components/SectionPlaceholder";
-import { NAV_SECTIONS } from "@/lib/navigation";
+import { ProductsView } from "@/components/ProductsView";
 
-const section = NAV_SECTIONS.find((s) => s.slug === "catalogo")!;
+export const metadata: Metadata = { title: "Catalogo — Magazzino" };
 
-export const metadata: Metadata = { title: `${section.label} — Magazzino` };
-
+/**
+ * Sezione Catalogo: lista prodotti con badge sotto-scorta, filtro e — per il
+ * solo Admin — CRUD e import/export CSV. La vista è interamente lato client
+ * (`ProductsView`) e consuma il contratto catalogo `/v1` via il client API.
+ */
 export default function CatalogoPage() {
-  return (
-    <SectionPlaceholder
-      title={section.label}
-      description={section.description}
-    />
-  );
+  return <ProductsView />;
 }

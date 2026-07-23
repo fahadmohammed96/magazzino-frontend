@@ -188,6 +188,50 @@ export async function apiFetch<T = unknown>(
   }
 }
 
+/**
+ * Come {@link apiFetch}, ma restituisce il corpo grezzo come {@link Blob}
+ * invece di interpretarlo come JSON. Serve agli endpoint che rispondono con
+ * un file da scaricare (es. l'export CSV del catalogo): applica la stessa
+ * autenticazione Bearer, la stessa gestione del 401 (sessione scaduta) e la
+ * stessa normalizzazione d'errore, ma non fa il parsing del contenuto.
+ *
+ * @throws {ApiError} per ogni esito non riuscito (rete, HTTP non-2xx).
+ */
+export async function apiFetchBlob(
+  path: string,
+  options: ApiFetchOptions = {},
+): Promise<Blob> {
+  const { auth = true, ...init } = options;
+  const url = buildUrl(getApiBaseUrl(), path);
+  const token = auth ? authTokenProvider() : null;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init.headers,
+      },
+    });
+  } catch {
+    throw new ApiError(
+      "network_error",
+      "Impossibile raggiungere il backend. Verifica la connessione e riprova.",
+      undefined,
+    );
+  }
+
+  if (!response.ok) {
+    if (response.status === 401 && auth && unauthorizedHandler) {
+      unauthorizedHandler();
+    }
+    throw await toApiError(response);
+  }
+
+  return response.blob();
+}
+
 /** Converte una risposta non-2xx nel corrispondente {@link ApiError}. */
 async function toApiError(response: Response): Promise<ApiError> {
   let body: unknown;

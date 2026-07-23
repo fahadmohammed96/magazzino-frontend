@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ApiError,
   apiFetch,
+  apiFetchBlob,
   configureApiAuth,
   getApiBaseUrl,
   isApiErrorBody,
@@ -210,6 +211,56 @@ describe("api-client", () => {
         apiFetch("/pubblica", { auth: false }),
       ).rejects.toBeInstanceOf(ApiError);
       expect(onUnauthorized).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("apiFetchBlob", () => {
+    /** Response fittizia con corpo Blob per l'export CSV. */
+    function blobResponse(
+      blob: Blob,
+      init: { status?: number; ok?: boolean } = {},
+    ): Response {
+      const status = init.status ?? 200;
+      return {
+        ok: init.ok ?? (status >= 200 && status < 300),
+        status,
+        blob: () => Promise.resolve(blob),
+        json: () => Promise.reject(new SyntaxError("no json")),
+        text: () => Promise.resolve(""),
+      } as unknown as Response;
+    }
+
+    it("restituisce il blob e allega il token Bearer", async () => {
+      const blob = new Blob(["sku,name\n"], { type: "text/csv" });
+      const fetchMock = vi.fn().mockResolvedValue(blobResponse(blob));
+      vi.stubGlobal("fetch", fetchMock);
+      configureApiAuth({ getToken: () => "tok", onUnauthorized: vi.fn() });
+
+      const result = await apiFetchBlob("/v1/products/export");
+
+      expect(result).toBe(blob);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe(`${BASE}/v1/products/export`);
+      expect(init.headers).toMatchObject({ Authorization: "Bearer tok" });
+    });
+
+    it("su 401 invoca onUnauthorized e solleva ApiError", async () => {
+      const onUnauthorized = vi.fn();
+      configureApiAuth({ getToken: () => "tok", onUnauthorized });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(
+          jsonResponse(
+            { error: { code: "unauthorized", message: "scaduto" } },
+            { status: 401 },
+          ),
+        ),
+      );
+
+      await expect(apiFetchBlob("/v1/products/export")).rejects.toBeInstanceOf(
+        ApiError,
+      );
+      expect(onUnauthorized).toHaveBeenCalledTimes(1);
     });
   });
 });
