@@ -36,6 +36,14 @@ export function LoginForm() {
     event.preventDefault();
     if (submitting) return;
 
+    // Il form usa `noValidate` (niente tooltip nativi del browser): validiamo
+    // qui i campi obbligatori, così un submit a vuoto non parte come richiesta
+    // di rete ma mostra subito il messaggio in pagina.
+    if (username.trim() === "" || password === "") {
+      setError("Inserisci nome utente e password.");
+      return;
+    }
+
     setError(null);
     setSubmitting(true);
     try {
@@ -68,7 +76,7 @@ export function LoginForm() {
           aria-invalid={error !== null}
           aria-describedby={error ? errorId : undefined}
           disabled={submitting}
-          className="rounded-[var(--radius-card)] border border-border bg-surface px-3 py-2 text-sm text-surface-contrast outline-none transition-colors duration-200 focus-visible:border-accent disabled:opacity-60"
+          className="rounded-[var(--radius-card)] border border-border bg-surface px-3 py-2 text-sm text-surface-contrast transition-colors duration-200 focus-visible:border-accent disabled:opacity-60"
         />
       </div>
 
@@ -87,7 +95,7 @@ export function LoginForm() {
           aria-invalid={error !== null}
           aria-describedby={error ? errorId : undefined}
           disabled={submitting}
-          className="rounded-[var(--radius-card)] border border-border bg-surface px-3 py-2 text-sm text-surface-contrast outline-none transition-colors duration-200 focus-visible:border-accent disabled:opacity-60"
+          className="rounded-[var(--radius-card)] border border-border bg-surface px-3 py-2 text-sm text-surface-contrast transition-colors duration-200 focus-visible:border-accent disabled:opacity-60"
         />
       </div>
 

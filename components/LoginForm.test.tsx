@@ -76,6 +76,17 @@ describe("LoginForm", () => {
     expect(screen.getByLabelText(/nome utente/i)).toHaveValue("mario");
   });
 
+  it("a campi vuoti mostra la validazione e non chiama il backend", async () => {
+    render(<LoginForm />);
+
+    fireEvent.click(screen.getByRole("button", { name: /accedi/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/inserisci nome utente e password/i);
+    expect(loginMock).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it("se già autenticato reindirizza alla dashboard", () => {
     mockStatus = "authenticated";
     render(<LoginForm />);
