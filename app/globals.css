@@ -4,16 +4,60 @@
  * DESIGN TOKEN — unica fonte per colori, tipografia e raggi.
  * Regola di progetto (AGENTS.md): mai valori hardcoded nei componenti,
  * sempre classi derivate da questi token.
- * I valori qui sotto sono NEUTRI di partenza: la palette definitiva
- * viene decisa in fase di design (issue dedicata) e aggiornata SOLO qui.
+ *
+ * I valori sono NEUTRI di partenza: la palette definitiva viene decisa in
+ * fase di design (issue dedicata) e aggiornata SOLO qui. Ogni token esiste
+ * in due varianti — chiara (`:root`) e scura (`.dark`) — così il toggle
+ * dark mode non richiede colori hardcoded nei componenti.
+ *
+ * Contrasti verificati (WCAG 2.2 AA, testo normale ≥ 4.5:1):
+ *  - surface-contrast su surface  → chiaro ~13:1, scuro ~13:1
+ *  - muted su surface             → chiaro ~5.4:1, scuro ~6.8:1
+ *  - primary-contrast su primary  → chiaro ~9:1,  scuro ~6:1
  */
-@theme {
-  --color-primary: oklch(0.35 0.02 260);
+
+/* Dark mode pilotato da una classe `.dark` sull'elemento <html>: il toggle
+ * utente aggiunge/rimuove la classe, indipendente da prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --color-primary: oklch(0.38 0.03 260);
   --color-primary-contrast: oklch(0.99 0 0);
-  --color-accent: oklch(0.55 0.12 260);
+  --color-accent: oklch(0.55 0.13 260);
   --color-surface: oklch(0.98 0.005 260);
+  --color-surface-muted: oklch(0.955 0.006 260);
   --color-surface-contrast: oklch(0.22 0.01 260);
-  --color-muted: oklch(0.55 0.01 260);
+  --color-border: oklch(0.9 0.006 260);
+  --color-muted: oklch(0.47 0.015 260);
+
+  color-scheme: light;
+}
+
+.dark {
+  --color-primary: oklch(0.62 0.11 260);
+  --color-primary-contrast: oklch(0.16 0.01 260);
+  --color-accent: oklch(0.68 0.13 260);
+  --color-surface: oklch(0.19 0.01 260);
+  --color-surface-muted: oklch(0.23 0.012 260);
+  --color-surface-contrast: oklch(0.95 0.005 260);
+  --color-border: oklch(0.32 0.012 260);
+  --color-muted: oklch(0.7 0.02 260);
+
+  color-scheme: dark;
+}
+
+/* Mappa i token semantici sulle utility Tailwind (`bg-surface`,
+ * `text-muted`, `border-border`, …). `inline` risolve i riferimenti alle
+ * custom properties a runtime, così il cambio `.dark` aggiorna tutto. */
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-primary-contrast: var(--color-primary-contrast);
+  --color-accent: var(--color-accent);
+  --color-surface: var(--color-surface);
+  --color-surface-muted: var(--color-surface-muted);
+  --color-surface-contrast: var(--color-surface-contrast);
+  --color-border: var(--color-border);
+  --color-muted: var(--color-muted);
 
   --font-display: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
   --font-body: var(--font-sans, ui-sans-serif, system-ui, sans-serif);

@@ -1,8 +1,9 @@
-# [NOME PROGETTO]
+# Magazzino — Frontend
 
-[Una riga sul progetto.] Le convenzioni operative del repository (stack,
-comandi, regole per gli agenti di sviluppo) sono in **[AGENTS.md](./AGENTS.md)**:
-è la fonte di verità, questo README è solo l'ingresso.
+Dashboard interna per la gestione di catalogo, clienti e ordini di magazzino.
+Le convenzioni operative del repository (stack, comandi, regole per gli agenti
+di sviluppo) sono in **[AGENTS.md](./AGENTS.md)**: è la fonte di verità, questo
+README è solo l'ingresso.
 
 ## Avvio rapido
 
