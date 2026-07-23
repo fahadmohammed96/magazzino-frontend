@@ -13,8 +13,8 @@ describe("NavLinks", () => {
     mockPathname = "/";
   });
 
-  it("mostra Panoramica e le tre sezioni con gli href corretti", () => {
-    render(<NavLinks />);
+  it("all'Admin mostra Panoramica e tutte le sezioni con gli href corretti", () => {
+    render(<NavLinks role="admin" />);
     expect(screen.getByRole("link", { name: "Panoramica" })).toHaveAttribute(
       "href",
       "/",
@@ -33,9 +33,26 @@ describe("NavLinks", () => {
     );
   });
 
+  it("all'Operatore nasconde le voci riservate all'Admin (Catalogo)", () => {
+    render(<NavLinks role="operator" />);
+    expect(screen.getByRole("link", { name: "Panoramica" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Clienti" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ordini" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Catalogo" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("senza ruolo noto nasconde comunque le voci riservate", () => {
+    render(<NavLinks />);
+    expect(
+      screen.queryByRole("link", { name: "Catalogo" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("segna la sezione attiva con aria-current=page", () => {
     mockPathname = "/ordini";
-    render(<NavLinks />);
+    render(<NavLinks role="admin" />);
     expect(screen.getByRole("link", { name: "Ordini" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -47,9 +64,9 @@ describe("NavLinks", () => {
 
   it("non attiva Panoramica su una sotto-rotta", () => {
     mockPathname = "/catalogo";
-    render(<NavLinks />);
-    expect(screen.getByRole("link", { name: "Panoramica" })).not.toHaveAttribute(
-      "aria-current",
-    );
+    render(<NavLinks role="admin" />);
+    expect(
+      screen.getByRole("link", { name: "Panoramica" }),
+    ).not.toHaveAttribute("aria-current");
   });
 });

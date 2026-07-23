@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ApiError,
   apiFetch,
+  configureApiAuth,
   getApiBaseUrl,
   isApiErrorBody,
+  resetApiAuth,
   UNKNOWN_ERROR_CODE,
 } from "./api-client";
 
@@ -35,6 +37,7 @@ describe("api-client", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
+    resetApiAuth();
   });
 
   describe("getApiBaseUrl", () => {
@@ -143,6 +146,70 @@ describe("api-client", () => {
       await expect(apiFetch("/x")).rejects.toMatchObject({
         code: "invalid_response",
       });
+    });
+  });
+
+  describe("autenticazione", () => {
+    it("allega Authorization: Bearer quando c'è un token", async () => {
+      configureApiAuth({ getToken: () => "tok", onUnauthorized: vi.fn() });
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      await apiFetch("/protetta");
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${BASE}/protetta`,
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: "Bearer tok" }),
+        }),
+      );
+    });
+
+    it("non allega il token quando auth: false", async () => {
+      configureApiAuth({ getToken: () => "tok", onUnauthorized: vi.fn() });
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      await apiFetch("/pubblica", { auth: false });
+
+      const [, init] = fetchMock.mock.calls[0];
+      expect(init.headers).not.toHaveProperty("Authorization");
+    });
+
+    it("su 401 di una richiesta autenticata invoca onUnauthorized", async () => {
+      const onUnauthorized = vi.fn();
+      configureApiAuth({ getToken: () => "tok", onUnauthorized });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(
+          jsonResponse(
+            { error: { code: "unauthorized", message: "scaduto" } },
+            { status: 401 },
+          ),
+        ),
+      );
+
+      await expect(apiFetch("/protetta")).rejects.toBeInstanceOf(ApiError);
+      expect(onUnauthorized).toHaveBeenCalledTimes(1);
+    });
+
+    it("su 401 di una richiesta pubblica NON invoca onUnauthorized", async () => {
+      const onUnauthorized = vi.fn();
+      configureApiAuth({ getToken: () => null, onUnauthorized });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(
+          jsonResponse(
+            { error: { code: "invalid_credentials", message: "no" } },
+            { status: 401 },
+          ),
+        ),
+      );
+
+      await expect(
+        apiFetch("/pubblica", { auth: false }),
+      ).rejects.toBeInstanceOf(ApiError);
+      expect(onUnauthorized).not.toHaveBeenCalled();
     });
   });
 });
