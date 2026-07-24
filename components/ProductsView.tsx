@@ -16,6 +16,7 @@ import {
 } from "@/lib/products";
 import { ProductsTable } from "@/components/ProductsTable";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
+import { useModalDialog } from "@/lib/use-modal-dialog";
 
 /** Estrae un messaggio leggibile da un errore sconosciuto. */
 function messageOf(error: unknown, fallback: string): string {
@@ -364,54 +365,9 @@ function ConfirmDeleteDialog({
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const opener = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const focusables = () =>
-      Array.from(
-        dialog.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-
-    cancelRef.current?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onCancel();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const items = focusables();
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      const active = document.activeElement;
-
-      if (active && !dialog!.contains(active)) {
-        event.preventDefault();
-        first.focus();
-      } else if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      opener?.focus();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Stessa semantica modale del form, con focus iniziale sull'azione non
+  // distruttiva (Annulla) invece che sul primo focusable.
+  useModalDialog(dialogRef, onCancel, { initialFocusRef: cancelRef });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

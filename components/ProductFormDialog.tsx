@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { Product, ProductInput } from "@/lib/products";
+import { useModalDialog } from "@/lib/use-modal-dialog";
 
 interface ProductFormDialogProps {
   /** `create` per un nuovo prodotto, `edit` per modificarne uno esistente. */
@@ -75,60 +76,9 @@ export function ProductFormDialog({
   );
   const [errors, setErrors] = useState<FieldErrors>({});
 
-  // Semantica modale: focus iniziale, trappola del focus, chiusura con Esc,
-  // ripristino del focus al controllo che ha aperto il dialog (stesso pattern
-  // del drawer della shell) e blocco dello scroll della pagina retrostante.
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const opener = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const focusables = () =>
-      Array.from(
-        dialog.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-
-    focusables()[0]?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onCancel();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const items = focusables();
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      const active = document.activeElement;
-
-      if (active && !dialog!.contains(active)) {
-        event.preventDefault();
-        first.focus();
-      } else if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      opener?.focus();
-    };
-    // onCancel è stabile (useCallback nel chiamante); il dialog è montato una
-    // sola volta per apertura, quindi l'effetto va eseguito solo al mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Semantica modale (focus iniziale sul primo campo, trappola del focus, Esc,
+  // scroll lock, ripristino del focus) condivisa via hook con gli altri dialog.
+  useModalDialog(dialogRef, onCancel);
 
   function validate(): { input: ProductInput; errors: FieldErrors } {
     const nextErrors: FieldErrors = {};
