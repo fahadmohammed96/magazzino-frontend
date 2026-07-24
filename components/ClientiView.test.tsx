@@ -164,7 +164,7 @@ describe("ClientiView", () => {
     );
   });
 
-  it("elimina un cliente previa conferma", async () => {
+  it("elimina un cliente previa conferma e riporta il focus su «Nuovo cliente»", async () => {
     mockList.mockResolvedValue([ACME]);
     mockDelete.mockResolvedValue(undefined);
     render(<ClientiView />);
@@ -180,6 +180,30 @@ describe("ClientiView", () => {
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
+    // La riga eliminata porta via il pulsante «Elimina» (opener): il focus
+    // deve atterrare su un elemento stabile, non sul <body>.
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /nuovo cliente/i }),
+      ).toHaveFocus(),
+    );
+  });
+
+  it("espone l'elenco come region focusabile ed etichettata", async () => {
+    mockList.mockResolvedValue([ACME]);
+    render(<ClientiView />);
+    await screen.findByText("Acme S.r.l.");
+
+    const region = screen.getByRole("region", { name: /elenco dei clienti/i });
+    expect(region).toHaveAttribute("tabindex", "0");
+  });
+
+  it("annuncia un esito sintetico via live region invece dell'intero elenco", async () => {
+    mockList.mockResolvedValue([ACME, BETA]);
+    render(<ClientiView />);
+    await screen.findByText("Acme S.r.l.");
+
+    expect(screen.getByRole("status")).toHaveTextContent(/2 clienti trovati/i);
   });
 
   it("mostra l'errore del backend senza chiudere il form in creazione", async () => {

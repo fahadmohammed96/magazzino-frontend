@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ApiError } from "@/lib/api-client";
 import {
   createCustomer,
@@ -65,6 +65,11 @@ export function ClientiView() {
   const searchId = useId();
   const deleteDescId = useId();
 
+  // Pulsante «Nuovo cliente»: destinazione stabile del focus dopo
+  // un'eliminazione, quando la riga (e il suo pulsante) sparisce dal DOM.
+  const newCustomerRef = useRef<HTMLButtonElement>(null);
+  const [focusNewAfterDelete, setFocusNewAfterDelete] = useState(false);
+
   // Debounce della ricerca: la query effettiva insegue quella digitata.
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
@@ -91,6 +96,17 @@ export function ClientiView() {
       active = false;
     };
   }, [debouncedQuery, reloadKey]);
+
+  // Dopo un'eliminazione riuscita il dialog si chiude e la riga sparisce:
+  // l'opener (pulsante «Elimina» della riga) non esiste più, così il focus
+  // finirebbe sul <body>. Lo riportiamo su un elemento stabile. L'effetto gira
+  // dopo il commit, quando il Modal è già smontato (e il suo ripristino focus
+  // sull'opener staccato è già avvenuto), così questo focus prevale.
+  useEffect(() => {
+    if (!focusNewAfterDelete) return;
+    newCustomerRef.current?.focus();
+    setFocusNewAfterDelete(false);
+  }, [focusNewAfterDelete]);
 
   /** Forza un nuovo caricamento dell'elenco (retry o refresh post-mutazione). */
   function reload() {
@@ -143,6 +159,7 @@ export function ClientiView() {
     try {
       await deleteCustomer(dialog.customer.id);
       setDialog(null);
+      setFocusNewAfterDelete(true);
       reload();
     } catch (cause) {
       setDeleteError(errorMessage(cause));
@@ -152,6 +169,24 @@ export function ClientiView() {
   }
 
   const trimmedQuery = debouncedQuery.trim();
+
+  // Messaggio sintetico per la live region: annuncia solo l'esito del
+  // caricamento (non l'intero elenco), evitando di rileggere tutte le righe a
+  // ogni ricerca. Formulato per non collidere coi testi visibili.
+  let statusMessage = "";
+  if (listState === "loading") {
+    statusMessage = "Caricamento dell'elenco in corso.";
+  } else if (listState === "error") {
+    statusMessage = "Errore durante il caricamento dell'elenco.";
+  } else if (customers.length === 0) {
+    statusMessage = trimmedQuery
+      ? "Nessun risultato per la ricerca."
+      : "Elenco vuoto.";
+  } else {
+    statusMessage = `${customers.length} ${
+      customers.length === 1 ? "cliente trovato" : "clienti trovati"
+    }.`;
+  }
 
   return (
     <section aria-labelledby="titolo-clienti" className="flex flex-col gap-6">
@@ -168,6 +203,7 @@ export function ClientiView() {
           </p>
         </div>
         <button
+          ref={newCustomerRef}
           type="button"
           onClick={openCreate}
           className="inline-flex h-10 items-center justify-center rounded-[var(--radius-card)] bg-primary px-4 text-sm font-medium text-primary-contrast transition-colors duration-200 hover:bg-accent"
@@ -175,6 +211,13 @@ export function ClientiView() {
           Nuovo cliente
         </button>
       </header>
+
+      {/* Live region dedicata: annuncia un esito sintetico del caricamento,
+          non l'intero elenco. Elemento persistente, così l'aggiornamento del
+          testo viene annunciato. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {statusMessage}
+      </p>
 
       <search>
         <label htmlFor={searchId} className="sr-only">
@@ -190,7 +233,7 @@ export function ClientiView() {
         />
       </search>
 
-      <div aria-live="polite" className="min-h-24">
+      <div className="min-h-24">
         {listState === "loading" && <CustomersSkeleton />}
 
         {listState === "error" && (
@@ -225,9 +268,13 @@ export function ClientiView() {
         )}
 
         {listState === "ready" && customers.length > 0 && (
-          <div className="overflow-x-auto rounded-[var(--radius-card)] border border-border">
+          <div
+            role="region"
+            aria-label="Elenco dei clienti"
+            tabIndex={0}
+            className="overflow-x-auto rounded-[var(--radius-card)] border border-border"
+          >
             <table className="w-full border-collapse text-left text-sm">
-              <caption className="sr-only">Elenco dei clienti</caption>
               <thead>
                 <tr className="border-b border-border bg-surface-muted">
                   <th scope="col" className="px-4 py-3 font-medium">
@@ -351,22 +398,23 @@ export function ClientiView() {
   );
 }
 
-/** Placeholder animato mostrato mentre l'elenco carica. */
+/**
+ * Placeholder animato mostrato mentre l'elenco carica. Puramente visivo
+ * (`aria-hidden`): l'annuncio per screen reader è affidato alla live region
+ * sintetica, così il caricamento non viene comunicato due volte.
+ */
 function CustomersSkeleton() {
   return (
-    <>
-      <div
-        className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-border p-4"
-        aria-hidden="true"
-      >
-        {[0, 1, 2].map((row) => (
-          <div
-            key={row}
-            className="h-10 animate-pulse rounded-[var(--radius-card)] bg-surface-muted"
-          />
-        ))}
-      </div>
-      <span className="sr-only">Caricamento dei clienti…</span>
-    </>
+    <div
+      className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-border p-4"
+      aria-hidden="true"
+    >
+      {[0, 1, 2].map((row) => (
+        <div
+          key={row}
+          className="h-10 animate-pulse rounded-[var(--radius-card)] bg-surface-muted"
+        />
+      ))}
+    </div>
   );
 }

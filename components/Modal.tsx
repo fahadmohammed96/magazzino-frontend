@@ -31,10 +31,21 @@ export function Modal({
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
 
+  // `onClose` può cambiare identità a ogni render del contenitore (handler non
+  // memoizzato): lo teniamo in un ref così l'effetto del focus-trap resta a
+  // dipendenze vuote e non si rimonta — evitando che un re-render del genitore
+  // mentre il modale è aperto (es. `saving` che disabilita i controlli) resetti
+  // il focus e ri-catturi l'opener.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     // Elemento con focus prima dell'apertura: da ripristinare alla chiusura.
+    // Catturato una sola volta, al montaggio.
     const opener =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
@@ -53,7 +64,7 @@ export function Modal({
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -81,7 +92,9 @@ export function Modal({
       document.removeEventListener("keydown", onKeyDown);
       opener?.focus();
     };
-  }, [onClose]);
+    // Effetto di montaggio: si esegue una sola volta. `onClose` è letto via
+    // ref, così il focus-trap non si rimonta a ogni render del contenitore.
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center">
