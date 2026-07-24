@@ -21,12 +21,10 @@ describe("OverviewCards", () => {
     expect(screen.getByRole("link", { name: /ordini/i })).toBeInTheDocument();
   });
 
-  it("all'Operatore nasconde le sezioni riservate all'Admin", () => {
+  it("all'Operatore mostra il Catalogo (sola lettura) e le altre sezioni", () => {
     mockRole = "operator";
     render(<OverviewCards />);
-    expect(
-      screen.queryByRole("link", { name: /catalogo/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /catalogo/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /clienti/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /ordini/i })).toBeInTheDocument();
   });
