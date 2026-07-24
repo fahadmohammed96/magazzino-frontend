@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
-import { SectionPlaceholder } from "@/components/SectionPlaceholder";
-import { NAV_SECTIONS } from "@/lib/navigation";
+import { OrdiniView } from "@/components/OrdiniView";
 
-const section = NAV_SECTIONS.find((s) => s.slug === "ordini")!;
+export const metadata: Metadata = { title: "Ordini — Magazzino" };
 
-export const metadata: Metadata = { title: `${section.label} — Magazzino` };
-
+/**
+ * Sezione Ordini: creazione con totale live, lista filtrabile per stato,
+ * dettaglio delle righe e cambio stato lungo le transizioni consentite. La
+ * vista è interamente lato client (`OrdiniView`) e consuma il contratto ordini
+ * `/v1` via il client API.
+ */
 export default function OrdiniPage() {
-  return (
-    <SectionPlaceholder
-      title={section.label}
-      description={section.description}
-    />
-  );
+  return <OrdiniView />;
 }
